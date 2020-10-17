@@ -32,6 +32,7 @@ class Parameters:
         self.num_aug = 5
         self.train_skipping = 8
         self.learning_rate = 0.1
+        self.memory_size = 80
 
         # Autodetect the feature extractor
 
@@ -77,7 +78,7 @@ class Parameters:
         self.disc_params = edict(
             layer="layer4", in_channels=self.in_channels, c_channels=96, out_channels=1,
             init_iters=self.init_iters, update_iters=self.update_iters,
-            memory_size=80, train_skipping=self.train_skipping, learning_rate=self.learning_rate,
+            memory_size=self.memory_size, train_skipping=self.train_skipping, learning_rate=self.learning_rate,
             pixel_weighting=dict(method='hinge', tf=0.1),
             filter_reg=(1e-4, 1e-2), precond=(1e-4, 1e-2), precond_lr=0.1, CG_forgetting_rate=750,
             device=self.device, update_filters=True,
@@ -89,6 +90,10 @@ class Parameters:
         )
 
     def get_model(self):
+
+        print("train_skipping: {}, lr: {}, memory size: {}".format(self.train_skipping,
+                                                                   self.learning_rate,
+                                                                   self.memory_size))
 
         augmenter = ImageAugmenter(self.aug_params)
         extractor = ResnetFeatureExtractor(self.feature_extractor).to(self.device)
@@ -152,7 +157,10 @@ if __name__ == '__main__':
 
     # Run the tracker and evaluate the results
 
-    p = Parameters(weights)
+    if args.fast:
+        print("using fast.")
+    p = Parameters(weights, fast=args.fast, device=args.dev)
+
     tracker = p.get_model()
     tracker.run_dataset(dset, out_path, speedrun=args.dset == 'dv2016val')
 
